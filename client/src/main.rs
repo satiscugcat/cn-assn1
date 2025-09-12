@@ -12,14 +12,14 @@ fn main() -> std::io::Result<()> {
     }
     let file_in = File::open(&args[1]).expect("Error opening PCAP file.");
     let mut pcap_reader = PcapReader::new(file_in).unwrap();
-    let mut stream = TcpStream::connect("127.0.0.1:7878")?;
+    
     let mut id = 0;
     while let Some(pkt) = pcap_reader.next_packet() {
         //Check if there is no error
 
         let pkt = pkt.unwrap();
         let old_data: Vec<u8> = pkt.data.into();
-        if is_dns_query(&old_data) {
+        if !is_dns_query(&old_data) {
             continue;
         } else {
             let (hours, minutes, seconds) = give_current_time();
@@ -34,19 +34,24 @@ fn main() -> std::io::Result<()> {
                 id % 10,
             ];
             new_data.extend(&old_data);
-
+	    let mut stream = TcpStream::connect("127.0.0.1:7878")?;
             stream.write(&new_data)?;
+	    stream.shutdown(std::net::Shutdown::Both)?;
             id = id + 1;
         }
     }
 
     Ok(())
 }
-/// This function checks whether a packet is a DNS query. By RFC 1035, the first bit of the
+
+/// First we figure out if the packet is a DNS packet. We check if the dst port is 53,
+/// because in both TCP and UDP, the destination port bytes are at 36-37.
+/// By RFC 1035, the first bit of the
 /// third octect of a message determines this (0 if query, 1 if not). Because of network
 /// byte order, we thus check the highest bit of the third octet.
 fn is_dns_query(data: &[u8]) -> bool {
-    data[2] < 128
+    data[36] == 0 && data[37] == 53 && // checking if the port is 53
+	data[44] < 128 // checking if it is a query
 }
 
 fn give_current_time() -> (u8, u8, u8) {
