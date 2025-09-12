@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-pcap-parser = "0.17.0"
+pcap-file = "2.0.0"
