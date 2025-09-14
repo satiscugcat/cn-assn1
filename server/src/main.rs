@@ -63,8 +63,8 @@ fn main() -> std::io::Result<()> {
 	// f.write("\n".as_bytes())?;
 	writeln!(
 		f,
-		"{:02}{:02}{:02},{},{}",
-		hours, minutes, seconds, dns_query_name, final_ip
+		"{:02}{:02}{:02}{:02},{},{}",
+		hours, minutes, seconds,id, dns_query_name, final_ip
 	)?;	
 	
     }
