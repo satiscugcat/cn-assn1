@@ -44,7 +44,7 @@ fn main() -> std::io::Result<()> {
         let minutes = 10 * buf[2] + buf[3];
         let seconds = 10 * buf[4] + buf[5];
         let id = 10 * buf[6] + buf[7];
-        let ip_pool_start = if (12..18).contains(&hours) {
+        let ip_pool_start = if hours >= 12 && hours < 20 {
             5
         } else if hours >= 20 || hours < 4 {
             10
