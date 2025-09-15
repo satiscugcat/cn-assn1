@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Write;
 use std::net::TcpStream;
 use std::time::SystemTime;
- 
+
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() > 2 || args.len() == 1 {
@@ -12,11 +12,9 @@ fn main() -> std::io::Result<()> {
     }
     let file_in = File::open(&args[1]).expect("Error opening PCAP file.");
     let mut pcap_reader = PcapReader::new(file_in).unwrap();
-    
-    let mut id:u8 = 0;
-    while let Some(pkt) = pcap_reader.next_packet() {
-        //Check if there is no error
 
+    let mut id: u8 = 0;
+    while let Some(pkt) = pcap_reader.next_packet() {
         let pkt = pkt.unwrap();
         let old_data: Vec<u8> = pkt.data.into();
         if !is_dns_query(&old_data) {
@@ -34,9 +32,9 @@ fn main() -> std::io::Result<()> {
                 id % 10,
             ];
             new_data.extend_from_slice(&old_data);
-	    let mut stream = TcpStream::connect("127.0.0.1:7878")?;
+            let mut stream = TcpStream::connect("127.0.0.1:7878")?;
             stream.write_all(&new_data)?;
-	    stream.shutdown(std::net::Shutdown::Both)?;
+            stream.shutdown(std::net::Shutdown::Both)?;
             id = id + 1;
         }
     }
@@ -45,14 +43,21 @@ fn main() -> std::io::Result<()> {
 }
 
 /// First we figure out if the packet is a DNS packet. We check if the dst port is 53,
-/// because in both TCP and UDP, the destination port bytes are at 36-37.
-/// By RFC 1035, the first bit of the
-/// third octect of a message determines this (0 if query, 1 if not). Because of network
-/// byte order, we thus check the highest bit of the third octet.
+/// because in both TCP and UDP, for the files in the given pcap, the destination port
+/// bytes are at 36-37, (checked via WireShark).
+
+/// Then, we need to figure out if this is a query. By RFC 1035, the first bit of the
+/// third octect of a message determines this (0 if query, 1 if not). We find which byte
+/// this corrresponds to using WireShark, and then because of network byte order, we check
+/// if the highest bit of the appropriate byte is 0.
+
 fn is_dns_query(data: &[u8]) -> bool {
     data.len() > 45 && data[36] == 0 && data[37] == 53 && // checking if the port is 53
 	data[44] < 128 // checking if it is a query
 }
+
+/// Gives current hours, minutes, and seconds in UTC. These vaalues are calculated by
+/// using the time since UNIX_EPOCH.
 
 fn give_current_time() -> (u8, u8, u8) {
     let unix_epoch_age = SystemTime::now()
